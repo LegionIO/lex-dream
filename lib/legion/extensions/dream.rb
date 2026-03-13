@@ -5,6 +5,7 @@ require 'legion/extensions/dream/helpers/constants'
 require 'legion/extensions/dream/helpers/dream_store'
 require 'legion/extensions/dream/helpers/association_walker'
 require 'legion/extensions/dream/helpers/contradiction_detector'
+require 'legion/extensions/dream/helpers/agenda'
 
 module Legion
   module Extensions
