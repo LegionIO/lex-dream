@@ -2,6 +2,7 @@
 
 require 'legion/extensions/dream/version'
 require 'legion/extensions/dream/helpers/constants'
+require 'legion/extensions/dream/helpers/dream_store'
 
 module Legion
   module Extensions
