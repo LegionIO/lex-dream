@@ -7,6 +7,8 @@ require 'legion/extensions/identity'
 require 'legion/extensions/identity/client'
 require 'legion/extensions/emotion'
 require 'legion/extensions/emotion/client'
+require 'legion/extensions/tick'
+require 'legion/extensions/tick/client'
 require 'legion/extensions/dream'
 
 RSpec.configure do |config|
