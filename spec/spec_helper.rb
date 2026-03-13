@@ -2,6 +2,11 @@
 
 require 'bundler/setup'
 require 'legion/extensions/memory'
+require 'legion/extensions/memory/client'
+require 'legion/extensions/identity'
+require 'legion/extensions/identity/client'
+require 'legion/extensions/emotion'
+require 'legion/extensions/emotion/client'
 require 'legion/extensions/dream'
 
 RSpec.configure do |config|
