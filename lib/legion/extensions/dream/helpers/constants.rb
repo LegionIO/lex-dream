@@ -20,6 +20,8 @@ module Legion
             identity_entropy_check
             agenda_formation
             consolidation_commit
+            dream_reflection
+            dream_narration
           ].freeze
         end
       end

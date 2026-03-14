@@ -255,6 +255,27 @@ module Legion
             { traces_written: traces.size, dream_store_cleared: true }
           end
 
+          def phase_dream_reflection(**)
+            return { status: :skipped, reason: :extension_not_loaded } unless reflection_available?
+
+            reflection_runner = Object.new.extend(Legion::Extensions::Reflection::Runners::Reflection)
+            result = reflection_runner.reflect(tick_results: @phase_data)
+
+            @phase_data[:dream_health] = result[:cognitive_health]
+            Legion::Logging.debug "[dream] dream_reflection: health=#{result[:cognitive_health]} reflections=#{result[:reflections_generated]}"
+            result
+          end
+
+          def phase_dream_narration(**)
+            return { status: :skipped, reason: :extension_not_loaded } unless narrator_available?
+
+            narrator_runner = Object.new.extend(Legion::Extensions::Narrator::Runners::Narrator)
+            result = narrator_runner.narrate(tick_results: @phase_data, cognitive_state: { source: :dream })
+
+            Legion::Logging.debug "[dream] dream_narration: mood=#{result[:mood]}"
+            result
+          end
+
           include Legion::Extensions::Helpers::Lex if defined?(Legion::Extensions::Helpers::Lex)
 
           private
@@ -270,6 +291,22 @@ module Legion
 
           def identity
             @identity ||= Object.new.extend(Legion::Extensions::Identity::Runners::Identity)
+          end
+
+          def reflection_available?
+            Legion::Extensions.const_defined?(:Reflection) &&
+              Legion::Extensions::Reflection.const_defined?(:Runners) &&
+              Legion::Extensions::Reflection::Runners.const_defined?(:Reflection)
+          rescue StandardError
+            false
+          end
+
+          def narrator_available?
+            Legion::Extensions.const_defined?(:Narrator) &&
+              Legion::Extensions::Narrator.const_defined?(:Runners) &&
+              Legion::Extensions::Narrator::Runners.const_defined?(:Narrator)
+          rescue StandardError
+            false
           end
 
           def dream_store
