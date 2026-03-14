@@ -57,7 +57,7 @@ RSpec.describe 'Dream cycle integration' do
 
     # 6. Verify each phase produced output
     expect(result[:phases][:memory_audit][:decayed]).to be >= 0
-    expect(result[:phases][:memory_audit][:unresolved_count]).to eq(3)
+    expect(result[:phases][:memory_audit][:unresolved_count]).to be >= 3
     expect(result[:phases][:association_walk]).to have_key(:walk_results)
     expect(result[:phases][:contradiction_resolution][:detected]).to be >= 1
     expect(result[:phases][:identity_entropy_check]).to have_key(:entropy)

@@ -43,7 +43,7 @@ module Legion
             score_a = resolution_score(trace_a, strategy)
             score_b = resolution_score(trace_b, strategy)
 
-            return { resolution: :unresolvable } if (score_a - score_b).abs <= RESOLUTION_MARGIN
+            return { resolution: :unresolvable, trace_ids: trace_ids } if (score_a - score_b).abs <= RESOLUTION_MARGIN
 
             winner, loser = score_a > score_b ? [trace_a, trace_b] : [trace_b, trace_a]
 

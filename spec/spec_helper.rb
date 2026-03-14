@@ -2,7 +2,7 @@
 
 require 'bundler/setup'
 
-# Stub Legion::Logging before loading extensions (they reference it in debug calls)
+# Stub Legion::Logging and framework classes before loading extensions
 module Legion
   module Logging
     def self.debug(_msg); end
@@ -13,7 +13,20 @@ module Legion
 
     def self.error(_msg); end
   end
+
+  module Extensions
+    module Actors
+      class Every; end # rubocop:disable Lint/EmptyClass
+    end
+
+    module Helpers
+      module Lex; end
+    end
+  end
 end
+
+# Satisfy file-level requires from actor classes (e.g. lex-identity OrphanCheck)
+$LOADED_FEATURES << 'legion/extensions/actors/every'
 
 require 'legion/extensions/memory'
 require 'legion/extensions/memory/client'

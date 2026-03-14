@@ -11,12 +11,27 @@ module Legion
 
           EMERGENT_UNRESOLVED = lambda { |trace|
             return true if trace[:unresolved] == true
+
+            # Episodic traces with high emotional intensity that haven't been reinforced
             return true if trace[:trace_type] == :episodic &&
                            trace[:reinforcement_count].zero? &&
                            trace[:emotional_intensity] >= 0.5
+
+            # Any trace with low confidence that hasn't been reinforced
             return true if trace[:confidence].is_a?(Numeric) &&
                            trace[:confidence] < 0.4 &&
                            trace[:reinforcement_count].zero?
+
+            # Semantic/procedural traces with negative valence (potential concerns worth examining)
+            return true if %i[semantic procedural].include?(trace[:trace_type]) &&
+                           trace[:emotional_valence].is_a?(Numeric) &&
+                           trace[:emotional_valence] < -0.3 &&
+                           trace[:reinforcement_count] <= 1
+
+            # Unreinforced traces with moderate-high intensity (emotionally salient but unprocessed)
+            return true if trace[:reinforcement_count].zero? &&
+                           trace[:emotional_intensity].is_a?(Numeric) &&
+                           trace[:emotional_intensity] >= 0.6
 
             false
           }
@@ -121,7 +136,11 @@ module Legion
                 domain:     contradiction[:domain],
                 resolution: result[:resolution]
               )
-              result
+              result.merge(
+                domain:    contradiction[:domain],
+                valence_a: contradiction[:valence_a],
+                valence_b: contradiction[:valence_b]
+              )
             end
 
             @phase_data[:contradictions] = resolutions
@@ -158,6 +177,8 @@ module Legion
           end
 
           def phase_consolidation_commit(**)
+            # Snapshot agenda before clearing — used by dream journal
+            @phase_data[:agenda_snapshot] = dream_store.agenda.dup
             store  = memory.send(:default_store)
             traces = Helpers::Agenda.to_semantic_traces(dream_store.agenda)
             traces.each { |t| store.store(t) }

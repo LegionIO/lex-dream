@@ -27,13 +27,13 @@ module Legion
             nil
           end
 
-          def build_entry(results, phase_data, dream_store)
+          def build_entry(results, phase_data, _dream_store)
             lines = ["# Dream Cycle — #{Time.now.utc.strftime('%Y-%m-%d %H:%M:%S UTC')}", '']
             section_memory_audit(lines, results, phase_data)
             section_association_walk(lines, results, phase_data)
             section_contradiction_resolution(lines, results)
             section_identity_entropy(lines, results, phase_data)
-            section_agenda(lines, results, dream_store)
+            section_agenda(lines, results, phase_data)
             section_consolidation(lines, results)
             section_summary(lines, results, phase_data)
             lines.join("\n")
@@ -111,14 +111,14 @@ module Legion
             lines << ''
           end
 
-          def section_agenda(lines, results, dream_store)
+          def section_agenda(lines, results, phase_data)
             agenda = results[:agenda_formation] || {}
             lines << '## Phase 5: Agenda Formation'
             lines << ''
             lines << "- Total agenda items: #{agenda[:agenda_items]}"
             lines << ''
 
-            agenda_items = dream_store.agenda
+            agenda_items = phase_data[:agenda_snapshot] || []
             return unless agenda_items.any?
 
             agenda_items.group_by { |i| i[:type] }.each do |type, items|
@@ -164,12 +164,14 @@ module Legion
 
           def format_resolutions(lines, resolutions)
             resolutions.each do |r|
+              domain = r[:domain] ? " domain=#{r[:domain]}" : ''
+              valence = r[:valence_a] ? " (#{r[:valence_a]&.round(2)} vs #{r[:valence_b]&.round(2)})" : ''
               lines << if r[:resolution] == :resolved
-                         "- **resolved**: winner=#{r[:winner_id]&.slice(0, 8)} loser=#{r[:loser_id]&.slice(0, 8)}"
+                         "- **resolved**:#{domain} winner=#{r[:winner_id]&.slice(0, 8)} loser=#{r[:loser_id]&.slice(0, 8)}#{valence}"
                        elsif r[:trace_ids]
-                         "- **unresolvable**: traces=#{r[:trace_ids].map { |id| id[0..7] }.join(', ')}"
+                         "- **unresolvable**:#{domain} traces=#{r[:trace_ids].map { |id| id[0..7] }.join(', ')}#{valence}"
                        else
-                         '- **unresolvable**'
+                         "- **unresolvable**:#{domain}#{valence}"
                        end
             end
           end
