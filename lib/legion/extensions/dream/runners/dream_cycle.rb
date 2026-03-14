@@ -12,11 +12,11 @@ module Legion
           EMERGENT_UNRESOLVED = lambda { |trace|
             return true if trace[:unresolved] == true
             return true if trace[:trace_type] == :episodic &&
-                           trace[:reinforcement_count] == 0 &&
+                           trace[:reinforcement_count].zero? &&
                            trace[:emotional_intensity] >= 0.5
             return true if trace[:confidence].is_a?(Numeric) &&
                            trace[:confidence] < 0.4 &&
-                           trace[:reinforcement_count] == 0
+                           trace[:reinforcement_count].zero?
 
             false
           }
