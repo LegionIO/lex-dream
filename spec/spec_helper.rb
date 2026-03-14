@@ -1,6 +1,20 @@
 # frozen_string_literal: true
 
 require 'bundler/setup'
+
+# Stub Legion::Logging before loading extensions (they reference it in debug calls)
+module Legion
+  module Logging
+    def self.debug(_msg); end
+
+    def self.info(_msg); end
+
+    def self.warn(_msg); end
+
+    def self.error(_msg); end
+  end
+end
+
 require 'legion/extensions/memory'
 require 'legion/extensions/memory/client'
 require 'legion/extensions/identity'

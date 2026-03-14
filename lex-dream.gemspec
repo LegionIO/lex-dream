@@ -9,7 +9,8 @@ Gem::Specification.new do |spec|
   spec.email         = ['matthewdiverson@gmail.com']
 
   spec.summary       = 'LEX Dream'
-  spec.description   = 'Autonomous dream cycle for brain-modeled agentic AI — memory consolidation, association walking, contradiction resolution, and agenda formation'
+  spec.description   = 'Autonomous dream cycle for brain-modeled agentic AI — memory consolidation, ' \
+                       'association walking, contradiction resolution, and agenda formation'
   spec.homepage      = 'https://github.com/LegionIO/lex-dream'
   spec.license       = 'MIT'
   spec.required_ruby_version = '>= 3.4'

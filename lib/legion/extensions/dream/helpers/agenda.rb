@@ -8,11 +8,10 @@ module Legion
           module_function
 
           def build_from_phases(phase_outputs)
-            items = []
             now   = Time.now.utc
 
-            Array(phase_outputs[:unresolved_traces]).each do |trace|
-              items << {
+            items = Array(phase_outputs[:unresolved_traces]).map do |trace|
+              {
                 type:       :unresolved,
                 content:    { trace_id: trace[:trace_id] },
                 weight:     trace[:emotional_intensity],
@@ -56,11 +55,11 @@ module Legion
           def to_semantic_traces(agenda_items)
             agenda_items.map do |item|
               Legion::Extensions::Memory::Helpers::Trace.new_trace(
-                type:               :semantic,
-                content_payload:    { dream_agenda: item[:type], **item[:content] },
+                type:                :semantic,
+                content_payload:     { dream_agenda: item[:type], **item[:content] },
                 emotional_intensity: item[:weight],
-                domain_tags:        ["dream:#{item[:type]}"],
-                origin:             :direct_experience
+                domain_tags:         ["dream:#{item[:type]}"],
+                origin:              :direct_experience
               )
             end
           end

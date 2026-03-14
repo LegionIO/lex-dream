@@ -34,8 +34,8 @@ module Legion
 
           def record_walk_result(source_id:, path:, novelty_score:)
             @walk_results << {
-              source_id:    source_id,
-              path:         path,
+              source_id:     source_id,
+              path:          path,
               novelty_score: novelty_score,
               discovered_at: Time.now.utc
             }

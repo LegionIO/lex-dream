@@ -17,11 +17,11 @@ RSpec.describe 'Dream cycle integration' do
     # 1. Seed memory with 10 episodic traces (some unresolved)
     10.times do |i|
       t = trace_helper.new_trace(
-        type: :episodic,
-        content_payload: { event: "meeting_#{i}" },
+        type:                :episodic,
+        content_payload:     { event: "meeting_#{i}" },
         emotional_intensity: rand,
-        emotional_valence: rand(-1.0..1.0),
-        domain_tags: ['work']
+        emotional_valence:   rand(-1.0..1.0),
+        domain_tags:         ['work']
       )
       t[:unresolved] = true if i < 3
       memory_store.store(t)

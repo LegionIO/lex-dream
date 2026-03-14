@@ -72,7 +72,7 @@ module Legion
             return false if trace_a[:emotional_valence].abs < VALENCE_THRESHOLD
             return false if trace_b[:emotional_valence].abs < VALENCE_THRESHOLD
 
-            (trace_a[:emotional_valence] > 0) != (trace_b[:emotional_valence] > 0)
+            trace_a[:emotional_valence].positive? != trace_b[:emotional_valence].positive?
           end
           private_class_method :opposing_valence?
         end

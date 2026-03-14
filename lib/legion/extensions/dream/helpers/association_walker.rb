@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'set'
-
 module Legion
   module Extensions
     module Dream
@@ -9,7 +7,7 @@ module Legion
         module AssociationWalker
           module_function
 
-          def walk(store:, start_id:, max_hops: Constants::ASSOCIATION_WALK_HOPS,
+          def walk(store:, start_id:, max_hops: Constants::ASSOCIATION_WALK_HOPS, # rubocop:disable Metrics/ParameterLists
                    novelty_threshold: Constants::ASSOCIATION_NOVELTY_THRESHOLD,
                    known_paths: Set.new, **)
             raw = store.walk_associations(start_id: start_id, max_hops: max_hops)

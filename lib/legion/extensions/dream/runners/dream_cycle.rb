@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'set'
-
 module Legion
   module Extensions
     module Dream
@@ -12,9 +10,11 @@ module Legion
           def execute_dream_cycle(**)
             @phase_data = {}
             results = {}
+            Legion::Logging.info '[dream] cycle starting'
             Helpers::Constants::DREAM_CYCLE_PHASES.each do |phase|
               results[phase] = send(:"phase_#{phase}")
             end
+            Legion::Logging.info "[dream] cycle complete: #{results.keys.join(', ')}"
             { status: :completed, phases: results }
           end
 
@@ -36,6 +36,8 @@ module Legion
             unresolved = store.all_traces.select { |t| t[:unresolved] == true }
             @phase_data[:unresolved_traces] = unresolved
 
+            Legion::Logging.debug "[dream] memory_audit: decayed=#{decay_result[:decayed]} pruned=#{decay_result[:pruned]} " \
+                                  "migrated=#{migrate_result[:migrated]} candidates=#{candidates.size} unresolved=#{unresolved.size}"
             {
               decayed:                  decay_result[:decayed],
               pruned:                   decay_result[:pruned],
@@ -69,6 +71,7 @@ module Legion
             end
 
             @phase_data[:walk_results] = results
+            Legion::Logging.debug "[dream] association_walk: start=#{start_trace[:trace_id][0..7]} results=#{results.size}"
             { walk_results: results, start_trace: start_trace[:trace_id] }
           end
 
@@ -91,6 +94,9 @@ module Legion
             end
 
             @phase_data[:contradictions] = resolutions
+            Legion::Logging.debug "[dream] contradiction_resolution: detected=#{detected.size} resolved=#{resolutions.count do |r|
+              r[:resolution] == :resolved
+            end}"
             { detected: detected.size, resolutions: resolutions }
           end
 
@@ -102,6 +108,7 @@ module Legion
               trend:          result[:trend]
             )
             @phase_data[:entropy] = result
+            Legion::Logging.debug "[dream] identity_entropy: #{result[:classification]} trend=#{result[:trend]}"
             result
           end
 
@@ -115,6 +122,7 @@ module Legion
             items.each do |item|
               dream_store.add_agenda_item(type: item[:type], content: item[:content], weight: item[:weight])
             end
+            Legion::Logging.debug "[dream] agenda_formation: #{items.size} items"
             { agenda_items: items.size }
           end
 
@@ -133,10 +141,9 @@ module Legion
 
             dream_store.expire_stale!
             dream_store.clear
+            Legion::Logging.info "[dream] consolidation_commit: #{traces.size} traces written to memory"
             { traces_written: traces.size, dream_store_cleared: true }
           end
-
-          private
 
           include Legion::Extensions::Helpers::Lex if defined?(Legion::Extensions::Helpers::Lex)
         end

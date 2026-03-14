@@ -6,28 +6,28 @@ RSpec.describe Legion::Extensions::Dream::Helpers::AssociationWalker do
 
   let(:trace_a) do
     trace_helper.new_trace(
-      type: :episodic,
-      content_payload: 'Event A - high intensity unresolved',
+      type:                :episodic,
+      content_payload:     'Event A - high intensity unresolved',
       emotional_intensity: 0.9,
-      unresolved: true
+      unresolved:          true
     )
   end
 
   let(:trace_b) do
     trace_helper.new_trace(
-      type: :semantic,
-      content_payload: 'Concept B',
+      type:                :semantic,
+      content_payload:     'Concept B',
       emotional_intensity: 0.3,
-      unresolved: false
+      unresolved:          false
     )
   end
 
   let(:trace_c) do
     trace_helper.new_trace(
-      type: :trust,
-      content_payload: 'Trust C',
+      type:                :trust,
+      content_payload:     'Trust C',
       emotional_intensity: 0.2,
-      unresolved: false
+      unresolved:          false
     )
   end
 
@@ -56,8 +56,8 @@ RSpec.describe Legion::Extensions::Dream::Helpers::AssociationWalker do
 
     it 'filters results below novelty threshold' do
       results = described_class.walk(
-        store: memory_store,
-        start_id: trace_a[:trace_id],
+        store:             memory_store,
+        start_id:          trace_a[:trace_id],
         novelty_threshold: 1.0
       )
       expect(results).to be_empty
@@ -65,8 +65,8 @@ RSpec.describe Legion::Extensions::Dream::Helpers::AssociationWalker do
 
     it 'scores novel paths higher than previously traversed paths' do
       first_results = described_class.walk(
-        store: memory_store,
-        start_id: trace_a[:trace_id],
+        store:             memory_store,
+        start_id:          trace_a[:trace_id],
         novelty_threshold: 0.0
       )
       expect(first_results).not_to be_empty
@@ -75,8 +75,8 @@ RSpec.describe Legion::Extensions::Dream::Helpers::AssociationWalker do
 
       # All paths now known — novelty scores drop to 0.0, below the default threshold
       second_results = described_class.walk(
-        store: memory_store,
-        start_id: trace_a[:trace_id],
+        store:       memory_store,
+        start_id:    trace_a[:trace_id],
         known_paths: known
       )
       expect(second_results).to be_empty
@@ -84,7 +84,7 @@ RSpec.describe Legion::Extensions::Dream::Helpers::AssociationWalker do
 
     it 'respects max_hops' do
       results = described_class.walk(
-        store: memory_store,
+        store:    memory_store,
         start_id: trace_a[:trace_id],
         max_hops: 1
       )
@@ -96,10 +96,10 @@ RSpec.describe Legion::Extensions::Dream::Helpers::AssociationWalker do
     it 'returns the highest-salience unresolved episodic trace' do
       # Add a second unresolved episodic with lower intensity
       trace_d = trace_helper.new_trace(
-        type: :episodic,
-        content_payload: 'Lower priority episodic',
+        type:                :episodic,
+        content_payload:     'Lower priority episodic',
         emotional_intensity: 0.4,
-        unresolved: true
+        unresolved:          true
       )
       memory_store.store(trace_d)
 
