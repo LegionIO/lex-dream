@@ -26,9 +26,13 @@ module Legion
           end
 
           def select_start_trace(store:)
-            store.all_traces
-                 .select { |t| t[:trace_type] == :episodic && t[:unresolved] == true }
-                 .max_by { |t| t[:emotional_intensity] }
+            # Prefer episodic unresolved traces, fall back to any high-intensity unresolved
+            candidates = store.all_traces.select do |t|
+              t[:unresolved] == true ||
+                (t[:trace_type] == :episodic && t[:reinforcement_count] == 0 && t[:emotional_intensity] >= 0.5) ||
+                (t[:confidence].is_a?(Numeric) && t[:confidence] < 0.4 && t[:reinforcement_count] == 0)
+            end
+            candidates.max_by { |t| t[:emotional_intensity] }
           end
 
           def compute_novelty(path:, depth:, store:, known_paths:)

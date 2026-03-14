@@ -5,15 +5,43 @@ module Legion
     module Dream
       module Runners
         module DreamCycle
+          extend self
+
           CONSOLIDATION_CANDIDATE_THRESHOLD = 5
+
+          EMERGENT_UNRESOLVED = lambda { |trace|
+            return true if trace[:unresolved] == true
+            return true if trace[:trace_type] == :episodic &&
+                           trace[:reinforcement_count] == 0 &&
+                           trace[:emotional_intensity] >= 0.5
+            return true if trace[:confidence].is_a?(Numeric) &&
+                           trace[:confidence] < 0.4 &&
+                           trace[:reinforcement_count] == 0
+
+            false
+          }
 
           def execute_dream_cycle(**)
             @phase_data = {}
             results = {}
+
+            # Reload from cache to pick up traces written by other runners (e.g. coldstart)
+            store = memory.send(:default_store)
+            store.reload if store.respond_to?(:reload)
+
             Legion::Logging.info '[dream] cycle starting'
             Helpers::Constants::DREAM_CYCLE_PHASES.each do |phase|
+              Legion::Logging.debug "[dream] starting phase: #{phase}"
               results[phase] = send(:"phase_#{phase}")
+            rescue StandardError => e
+              Legion::Logging.error "[dream] phase #{phase} failed: #{e.message}"
+              Legion::Logging.error "[dream] #{e.backtrace&.first(3)&.join("\n")}"
+              results[phase] = { error: e.message }
             end
+            # Flush cache-backed store after all phases
+            store = memory.send(:default_store)
+            store.flush if store.respond_to?(:flush)
+
             Legion::Logging.info "[dream] cycle complete: #{results.keys.join(', ')}"
             { status: :completed, phases: results }
           end
@@ -33,7 +61,7 @@ module Legion
               store.store(t)
             end
 
-            unresolved = store.all_traces.select { |t| t[:unresolved] == true }
+            unresolved = store.all_traces.select(&EMERGENT_UNRESOLVED)
             @phase_data[:unresolved_traces] = unresolved
 
             Legion::Logging.debug "[dream] memory_audit: decayed=#{decay_result[:decayed]} pruned=#{decay_result[:pruned]} " \
@@ -146,6 +174,25 @@ module Legion
           end
 
           include Legion::Extensions::Helpers::Lex if defined?(Legion::Extensions::Helpers::Lex)
+
+          private
+
+          def memory
+            @memory ||= begin
+              runner = Object.new
+              runner.extend(Legion::Extensions::Memory::Runners::Traces)
+              runner.extend(Legion::Extensions::Memory::Runners::Consolidation)
+              runner
+            end
+          end
+
+          def identity
+            @identity ||= Object.new.extend(Legion::Extensions::Identity::Runners::Identity)
+          end
+
+          def dream_store
+            @dream_store ||= Helpers::DreamStore.new
+          end
         end
       end
     end
