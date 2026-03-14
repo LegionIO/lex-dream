@@ -29,6 +29,7 @@ module Legion
 
           def build_entry(results, phase_data, _dream_store)
             lines = ["# Dream Cycle — #{Time.now.utc.strftime('%Y-%m-%d %H:%M:%S UTC')}", '']
+            section_narrative(lines, results, phase_data)
             section_memory_audit(lines, results, phase_data)
             section_association_walk(lines, results, phase_data)
             section_contradiction_resolution(lines, results)
@@ -37,6 +38,22 @@ module Legion
             section_consolidation(lines, results)
             section_summary(lines, results, phase_data)
             lines.join("\n")
+          end
+
+          def section_narrative(lines, results, phase_data)
+            return unless LlmEnhancer.available?
+
+            narrative = LlmEnhancer.narrate_journal(results, phase_data)
+            return unless narrative
+
+            lines << '## Reflection'
+            lines << ''
+            lines << narrative
+            lines << ''
+            lines << '---'
+            lines << ''
+          rescue StandardError => e
+            Legion::Logging.debug "[dream] journal narrative skipped: #{e.message}"
           end
 
           def section_memory_audit(lines, results, phase_data)
@@ -173,6 +190,7 @@ module Legion
                        else
                          "- **unresolvable**:#{domain}#{valence}"
                        end
+              lines << "  > #{r[:reasoning][0..200]}" if r[:reasoning]
             end
           end
 
@@ -198,7 +216,7 @@ module Legion
             end
           end
 
-          private_class_method :section_memory_audit, :section_association_walk,
+          private_class_method :section_narrative, :section_memory_audit, :section_association_walk,
                                :section_contradiction_resolution, :section_identity_entropy,
                                :section_agenda, :section_consolidation, :section_summary,
                                :format_resolutions, :extract_payload, :truncate, :summarize_content

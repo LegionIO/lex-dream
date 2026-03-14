@@ -124,13 +124,16 @@ module Legion
           def phase_contradiction_resolution(**)
             store    = memory.send(:default_store)
             detected = Helpers::ContradictionDetector.detect(store: store)
+            use_llm  = Helpers::LlmEnhancer.available?
 
             resolutions = detected.map do |contradiction|
-              result = Helpers::ContradictionDetector.resolve(
-                trace_ids: contradiction[:trace_ids],
-                store:     store,
-                strategy:  Helpers::Constants::CONTRADICTION_RESOLUTION_STRATEGY
+              trace_a = store.get(contradiction[:trace_ids][0])
+              trace_b = store.get(contradiction[:trace_ids][1])
+
+              result = resolve_single_contradiction(
+                trace_a, trace_b, contradiction, store, use_llm
               )
+
               dream_store.record_contradiction(
                 trace_ids:  contradiction[:trace_ids],
                 domain:     contradiction[:domain],
@@ -144,10 +147,48 @@ module Legion
             end
 
             @phase_data[:contradictions] = resolutions
-            Legion::Logging.debug "[dream] contradiction_resolution: detected=#{detected.size} resolved=#{resolutions.count do |r|
-              r[:resolution] == :resolved
-            end}"
+            resolved_count = resolutions.count { |r| r[:resolution] == :resolved }
+            Legion::Logging.debug "[dream] contradiction_resolution: detected=#{detected.size} " \
+                                  "resolved=#{resolved_count} llm=#{use_llm}"
             { detected: detected.size, resolutions: resolutions }
+          end
+
+          def resolve_single_contradiction(trace_a, trace_b, contradiction, store, use_llm)
+            # Try LLM-enhanced resolution first
+            if use_llm && trace_a && trace_b
+              llm_result = Helpers::LlmEnhancer.resolve_contradiction(
+                trace_a, trace_b,
+                strategy: Helpers::Constants::CONTRADICTION_RESOLUTION_STRATEGY
+              )
+              if llm_result
+                apply_contradiction_result(llm_result, store)
+                return llm_result
+              end
+            end
+
+            # Mechanical fallback — ContradictionDetector.resolve mutates traces in-place
+            Helpers::ContradictionDetector.resolve(
+              trace_ids: contradiction[:trace_ids],
+              store:     store,
+              strategy:  Helpers::Constants::CONTRADICTION_RESOLUTION_STRATEGY
+            )
+          end
+
+          def apply_contradiction_result(result, store)
+            return unless result[:resolution] == :resolved
+
+            winner = store.get(result[:winner_id])
+            loser  = store.get(result[:loser_id])
+            return unless winner && loser
+
+            now = Time.now.utc
+            winner[:strength]        = [winner[:strength] + 0.1, 1.0].min
+            winner[:peak_strength]   = [winner[:peak_strength], winner[:strength]].max
+            winner[:last_reinforced] = now
+            store.store(winner)
+
+            loser[:strength] = [loser[:strength] - 0.1, 0.0].max
+            store.store(loser)
           end
 
           def phase_identity_entropy_check(**)
@@ -163,16 +204,33 @@ module Legion
           end
 
           def phase_agenda_formation(**)
-            items = Helpers::Agenda.build_from_phases(
-              unresolved_traces: @phase_data[:unresolved_traces] || [],
-              contradictions:    @phase_data[:contradictions] || [],
-              walk_results:      @phase_data[:walk_results] || [],
-              entropy:           @phase_data[:entropy] || {}
+            unresolved = @phase_data[:unresolved_traces] || []
+            contradictions = @phase_data[:contradictions] || []
+            walk_results  = @phase_data[:walk_results] || []
+            entropy       = @phase_data[:entropy] || {}
+
+            # Try LLM-synthesized agenda first
+            items = if Helpers::LlmEnhancer.available?
+                      Helpers::LlmEnhancer.synthesize_agenda(
+                        unresolved_traces: unresolved,
+                        contradictions:    contradictions,
+                        walk_results:      walk_results,
+                        entropy:           entropy
+                      )
+                    end
+
+            # Mechanical fallback
+            items ||= Helpers::Agenda.build_from_phases(
+              unresolved_traces: unresolved,
+              contradictions:    contradictions,
+              walk_results:      walk_results,
+              entropy:           entropy
             )
+
             items.each do |item|
               dream_store.add_agenda_item(type: item[:type], content: item[:content], weight: item[:weight])
             end
-            Legion::Logging.debug "[dream] agenda_formation: #{items.size} items"
+            Legion::Logging.debug "[dream] agenda_formation: #{items.size} items (llm=#{Helpers::LlmEnhancer.available?})"
             { agenda_items: items.size }
           end
 
