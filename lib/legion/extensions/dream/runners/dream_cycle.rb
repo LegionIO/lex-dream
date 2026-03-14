@@ -42,6 +42,9 @@ module Legion
             store = memory.send(:default_store)
             store.flush if store.respond_to?(:flush)
 
+            # Write human-readable dream journal before clearing state
+            Helpers::DreamJournal.write_entry(results: results, phase_data: @phase_data, dream_store: dream_store)
+
             Legion::Logging.info "[dream] cycle complete: #{results.keys.join(', ')}"
             { status: :completed, phases: results }
           end
