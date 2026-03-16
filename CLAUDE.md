@@ -11,7 +11,7 @@ Autonomous dream cycle for the LegionIO cognitive architecture. When the agent i
 ## Gem Info
 
 - **Gem name**: `lex-dream`
-- **Version**: `0.1.0`
+- **Version**: `0.1.1`
 - **Module**: `Legion::Extensions::Dream`
 - **Ruby**: `>= 3.4`
 - **License**: MIT
@@ -21,19 +21,23 @@ Autonomous dream cycle for the LegionIO cognitive architecture. When the agent i
 ```
 lib/legion/extensions/dream/
   version.rb
+  actors/
+    dream_cycle.rb             # Periodic actor (Every 300s) — calls execute_dream_cycle
   helpers/
     constants.rb               # Configuration defaults, DREAM_CYCLE_PHASES list, agenda item types
     dream_store.rb             # In-memory store for agenda, walk results, contradictions, entropy
     association_walker.rb      # Novelty-scored multi-hop association traversal + start trace selection
     contradiction_detector.rb  # Domain-tag overlap + valence divergence detection and resolution
     agenda.rb                  # Phase output synthesis and semantic trace conversion
-    llm_enhancer.rb            # Optional LLM integration for contradiction resolution and agenda synthesis
-    dream_journal.rb           # Writes human-readable dream journal entries
+    llm_enhancer.rb            # Optional LLM integration for contradiction resolution, agenda synthesis, and journal narration
+    dream_journal.rb           # Writes human-readable dream journal entries to logs/dreams/
   runners/
     dream_cycle.rb             # Eight-phase dream cycle runner (all phase methods)
   client.rb                    # Client with dependency injection for memory/identity/emotion
 spec/
   legion/extensions/dream/
+    actors/
+      dream_cycle_spec.rb
     helpers/
       dream_store_spec.rb
       association_walker_spec.rb
@@ -89,12 +93,13 @@ Items expire via `DREAM_PARTITION_TTL`. Oldest agenda items drop when `AGENDA_MA
 - `available?` — returns true when `Legion::LLM` is started
 - `resolve_contradiction(trace_a, trace_b, strategy:)` — prompts LLM to reason about which trace is more reliable; falls back to mechanical resolution if unavailable or on error
 - `synthesize_agenda(unresolved_traces:, contradictions:, walk_results:, entropy:)` — prompts LLM to synthesize agenda items from all phase data; mechanical fallback via `Helpers::Agenda.build_from_phases`
+- `narrate_journal(results, phase_data)` — prompts LLM to write a 3-5 paragraph analytical narrative for the dream journal; called by `DreamJournal.section_narrative` when LLM is available
 
 The system prompt instructs the LLM to act as the agent's internal dream processor: concise, analytical, structured reasoning only.
 
 ## Dream Journal
 
-`Helpers::DreamJournal.write_entry(results:, phase_data:, dream_store:)` is called after all phases complete but before dream state is cleared. It writes a human-readable journal entry to the `logs/` directory.
+`Helpers::DreamJournal.write_entry(results:, phase_data:, dream_store:)` is called after all phases complete but before dream state is cleared. It writes a human-readable Markdown journal entry to `<Dir.pwd>/logs/dreams/dream-<timestamp>.md`. When LLM is available, `LlmEnhancer.narrate_journal` prepends an analytical reflection section before the phase-by-phase breakdown.
 
 ## Client
 
@@ -134,10 +139,14 @@ sentinel → dormant_active:   no signals for 600s (SENTINEL_TO_DREAM_THRESHOLD)
 
 ## Development Notes
 
+- Actor namespace is `module Actor` (singular), matching the pattern used in other agentic extensions
+- Actor runner function is `execute_dream_cycle` (not `run_dream_cycle`)
 - `memory.send(:default_store)` needed because `default_store` is private on the memory runner
 - `store.reload` and `store.flush` are called defensively with `respond_to?` guards (only implemented by `CacheStore`, not `Store`)
 - `EMERGENT_UNRESOLVED` lambda defines five heuristics for finding unprocessed traces beyond the simple `unresolved: true` flag — episodic with zero reinforcement and high emotion, low-confidence unreinforced, negative-valence semantic/procedural, high-intensity unreinforced
 - Phase methods collect data into `@phase_data` for use by later phases and for the dream journal
+- `@phase_data[:agenda_snapshot]` is taken at the start of `phase_consolidation_commit` before `dream_store.clear` is called, preserving the snapshot for the dream journal
 - `dream_store.clear` is called at the end of `consolidation_commit` to reset state for the next dream cycle
 - Dream reflection and narration phases return `{ status: :skipped, reason: :extension_not_loaded }` when their dependencies are absent — the cycle completes normally
-- All state is in-memory (consistent with v0.1.0 pattern across agentic extensions)
+- Guards: `memory` uses `defined?(Legion::Extensions::Memory::Client)`, `identity` uses `defined?(Legion::Extensions::Identity::Runners::Identity)` — avoids crashes when extensions are not loaded
+- All state is in-memory (consistent with v0.1.1 pattern across agentic extensions)

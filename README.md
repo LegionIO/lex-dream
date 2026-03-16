@@ -41,7 +41,7 @@ Dream output feeds back into lex-memory as semantic traces with `dream:*` domain
 - `lex-emotion` -- emotional intensity for salience ranking
 - `lex-reflection` -- optional cognitive health assessment (dream_reflection phase)
 - `lex-narrator` -- optional narrative generation (dream_narration phase)
-- `legion-llm` -- optional LLM enhancement for contradiction resolution and agenda synthesis
+- `legion-llm` -- optional LLM enhancement for contradiction resolution, agenda synthesis, and journal narration
 
 ## Development
 
