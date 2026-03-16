@@ -13,3 +13,5 @@ group :test do
   gem 'rubocop', require: false
   gem 'rubocop-rspec', require: false
 end
+
+gem 'legion-gaia', path: '../../legion-gaia'
