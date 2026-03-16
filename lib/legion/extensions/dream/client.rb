@@ -9,9 +9,9 @@ module Legion
         attr_reader :dream_store
 
         def initialize(memory: nil, identity: nil, emotion: nil, **)
-          @memory      = memory   || Legion::Extensions::Memory::Client.new
-          @identity    = identity || Legion::Extensions::Identity::Client.new
-          @emotion     = emotion  || Legion::Extensions::Emotion::Client.new
+          @memory      = memory   || (Legion::Extensions::Memory::Client.new if defined?(Legion::Extensions::Memory::Client))
+          @identity    = identity || (Legion::Extensions::Identity::Client.new if defined?(Legion::Extensions::Identity::Client))
+          @emotion     = emotion  || (Legion::Extensions::Emotion::Client.new if defined?(Legion::Extensions::Emotion::Client))
           @dream_store = Helpers::DreamStore.new
           @phase_data  = {}
         end

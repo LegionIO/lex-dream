@@ -40,6 +40,11 @@ module Legion
             @phase_data = {}
             results = {}
 
+            unless memory
+              Legion::Logging.warn '[dream] skipping cycle: lex-memory not available'
+              return { status: :skipped, reason: :memory_not_available }
+            end
+
             # Reload from cache to pick up traces written by other runners (e.g. coldstart)
             store = memory.send(:default_store)
             store.reload if store.respond_to?(:reload)
@@ -192,6 +197,11 @@ module Legion
           end
 
           def phase_identity_entropy_check(**)
+            unless identity
+              Legion::Logging.warn '[dream] skipping identity_entropy_check: lex-identity not available'
+              return { status: :skipped, reason: :identity_not_available }
+            end
+
             result = identity.check_entropy(observations: {})
             dream_store.record_entropy(
               entropy:        result[:entropy],
@@ -281,16 +291,11 @@ module Legion
           private
 
           def memory
-            @memory ||= begin
-              runner = Object.new
-              runner.extend(Legion::Extensions::Memory::Runners::Traces)
-              runner.extend(Legion::Extensions::Memory::Runners::Consolidation)
-              runner
-            end
+            @memory ||= Legion::Extensions::Memory::Client.new if defined?(Legion::Extensions::Memory::Client)
           end
 
           def identity
-            @identity ||= Object.new.extend(Legion::Extensions::Identity::Runners::Identity)
+            @identity ||= Object.new.extend(Legion::Extensions::Identity::Runners::Identity) if defined?(Legion::Extensions::Identity::Runners::Identity)
           end
 
           def reflection_available?
