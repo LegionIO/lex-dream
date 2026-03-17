@@ -51,3 +51,6 @@ Naming/FileName:
 
 Naming/PredicateMethod:
   Enabled: false
+
+Gemspec/DevelopmentDependencies:
+  Enabled: false
